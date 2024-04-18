@@ -1,9 +1,13 @@
 package main
 
 import (
+	"bufio"
+	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"os"
+	"strings"
 
 	todo "github.com/YounessHassoune/todo-go/pkg"
 )
@@ -17,6 +21,26 @@ func check(e error) {
 		fmt.Fprintln(os.Stderr, e.Error())
 		os.Exit(1)
 	}
+}
+
+func getInput(r io.Reader, args ...string) (string, error) {
+
+	if len(args) > 0 {
+		return strings.Join(args, " "), nil
+	}
+	scanner := bufio.NewScanner(r)
+	scanner.Scan()
+
+	if err := scanner.Err(); err != nil {
+		return "", err
+	}
+
+	text := scanner.Text()
+
+	if len(text) == 0 {
+		return "", errors.New("empty todo is not allowed")
+	}
+	return text, nil
 }
 
 func main() {
@@ -37,8 +61,10 @@ func main() {
 
 	switch {
 	case *add:
-		todos.Add("Sample todo")
-		err := todos.Store(todosFile)
+		task, err := getInput(os.Stdin, flag.Args()...)
+		check(err)
+		todos.Add(task)
+		err = todos.Store(todosFile)
 		check(err)
 	case *complete > 0:
 		err := todos.Complete(*complete)
